@@ -6,7 +6,14 @@ Framing rules — judge ONLY by the proportion of the frame occupied by environm
 - extreme_close_up: only the face or part of the face fills the frame.
 - close_up: head and shoulders visible, minimal background.
 - medium_shot: subject visible roughly waist-up, OR the majority of the body is visible but the background/environment occupies only a minor part of the frame.
-- wide_shot: full body visible AND significant surrounding environment/setting (furniture, room, landscape, etc.) is a meaningful part of the composition.`;
+- wide_shot: full body visible AND significant surrounding environment/setting (furniture, room, landscape, etc.) is a meaningful part of the composition.
+
+Examples of correct framing judgment (pose does NOT determine framing, visible environment does):
+- A subject sitting cross-legged or with knees bent, with most of the room/floor/environment visible around them → wide_shot (NOT medium_shot, even though their body looks compact)
+- A subject sitting at a desk or table with visible background objects, furniture, and space around them → wide_shot
+- A subject shown only from the waist up, seated or standing, with little background visible → medium_shot
+
+The key test: if you removed the subject from the frame, would there be a lot of empty/visible environment left over? If yes, it's wide_shot regardless of the subject's pose or how their limbs are positioned.`;
 
 export type TargetProfile = {
   subject_placement: string;
