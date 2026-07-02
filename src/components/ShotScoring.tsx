@@ -1,18 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { scoreShot, type ShotScore } from "@/lib/score.functions";
 import type { TargetProfile } from "@/lib/analyze.functions";
-
-export const Route = createFileRoute("/score")({
-  head: () => ({
-    meta: [
-      { title: "Photomax — Shot Scoring" },
-      { name: "description", content: "Score your shot against a locked target profile." },
-    ],
-  }),
-  component: ShotScoring,
-});
 
 function fileToBase64(file: File): Promise<{ mediaType: string; base64: string }> {
   return new Promise((resolve, reject) => {
@@ -27,14 +16,6 @@ function fileToBase64(file: File): Promise<{ mediaType: string; base64: string }
   });
 }
 
-const DEFAULT_TARGET: TargetProfile = {
-  subject_placement: "center",
-  negative_space: "balanced",
-  mood: "cinematic_moody",
-  framing: "medium_shot",
-  coaching_focus: ["subject_placement", "framing"],
-};
-
 const ARROWS: Record<ShotScore["direction"], string> = {
   pan_left: "←",
   pan_right: "→",
@@ -45,20 +26,31 @@ const ARROWS: Record<ShotScore["direction"], string> = {
   no_change: "✓",
 };
 
-function ShotScoring() {
+type Props = {
+  target: TargetProfile;
+  onScored?: (score: ShotScore) => void;
+};
+
+export function ShotScoring({ target, onScored }: Props) {
   const score = useServerFn(scoreShot);
-  // Assumed already available in state (would be passed as prop / from store).
-  // Editable textarea here only so this screen is usable in isolation.
-  const [targetJson, setTargetJson] = useState(JSON.stringify(DEFAULT_TARGET, null, 2));
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [result, setResult] = useState<ShotScore | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fileKey, setFileKey] = useState(0);
 
   const handleFile = (f: File | null) => {
     setFile(f);
     setPreviewUrl(f ? URL.createObjectURL(f) : null);
+  };
+
+  const resetForNext = () => {
+    setFile(null);
+    setPreviewUrl(null);
+    setResult(null);
+    setError(null);
+    setFileKey((k) => k + 1);
   };
 
   const onScore = async () => {
@@ -68,18 +60,12 @@ function ShotScoring() {
       setError("Upload a shot to score.");
       return;
     }
-    let target: TargetProfile;
-    try {
-      target = JSON.parse(targetJson) as TargetProfile;
-    } catch {
-      setError("Target profile JSON is invalid.");
-      return;
-    }
     setLoading(true);
     try {
       const img = await fileToBase64(file);
       const r = await score({ data: { ...img, target } });
       setResult(r);
+      onScored?.(r);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -88,38 +74,11 @@ function ShotScoring() {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: 640,
-        margin: "40px auto",
-        padding: "0 20px",
-        fontFamily: "system-ui, sans-serif",
-      }}
-    >
-      <h1 style={{ fontSize: 24, marginBottom: 4 }}>Shot Scoring</h1>
+    <div>
+      <h2 style={{ fontSize: 22, marginBottom: 4 }}>Shot Scoring</h2>
       <p style={{ color: "#666", marginTop: 0, marginBottom: 24 }}>
         Upload your shot to score it against the locked target profile.
       </p>
-
-      <details style={{ marginBottom: 16 }}>
-        <summary style={{ cursor: "pointer", fontSize: 13, color: "#666" }}>
-          Target profile (from Inspiration Intake)
-        </summary>
-        <textarea
-          value={targetJson}
-          onChange={(e) => setTargetJson(e.target.value)}
-          rows={8}
-          style={{
-            width: "100%",
-            marginTop: 8,
-            padding: 8,
-            fontFamily: "ui-monospace, monospace",
-            fontSize: 12,
-            border: "1px solid #ccc",
-            borderRadius: 6,
-          }}
-        />
-      </details>
 
       <label
         style={{
@@ -133,6 +92,7 @@ function ShotScoring() {
         }}
       >
         <input
+          key={fileKey}
           type="file"
           accept="image/*"
           style={{ display: "none" }}
@@ -149,22 +109,38 @@ function ShotScoring() {
         )}
       </label>
 
-      <button
-        onClick={onScore}
-        disabled={loading}
-        style={{
-          marginTop: 16,
-          padding: "10px 20px",
-          fontSize: 15,
-          borderRadius: 6,
-          border: "none",
-          background: loading ? "#999" : "#111",
-          color: "white",
-          cursor: loading ? "default" : "pointer",
-        }}
-      >
-        {loading ? "Scoring…" : "Score This Shot"}
-      </button>
+      <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+        <button
+          onClick={onScore}
+          disabled={loading}
+          style={{
+            padding: "10px 20px",
+            fontSize: 15,
+            borderRadius: 6,
+            border: "none",
+            background: loading ? "#999" : "#111",
+            color: "white",
+            cursor: loading ? "default" : "pointer",
+          }}
+        >
+          {loading ? "Scoring…" : "Score This Shot"}
+        </button>
+        {result && (
+          <button
+            onClick={resetForNext}
+            style={{
+              padding: "10px 20px",
+              fontSize: 15,
+              borderRadius: 6,
+              border: "1px solid #ccc",
+              background: "white",
+              cursor: "pointer",
+            }}
+          >
+            Try another shot
+          </button>
+        )}
+      </div>
 
       {error && <div style={{ marginTop: 16, color: "#b00", fontSize: 14 }}>{error}</div>}
 
