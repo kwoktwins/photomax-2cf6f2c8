@@ -48,51 +48,67 @@ export const scoreShot = createServerFn({ method: "POST" })
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("Missing ANTHROPIC_API_KEY");
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-5",
-        max_tokens: 1024,
-        system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: data.mediaType,
-                  data: data.base64,
+    const callOnce = async (): Promise<ShotScore> => {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-5",
+          max_tokens: 1024,
+          system: SYSTEM_PROMPT,
+          messages: [
+            {
+              role: "user",
+              content: [
+                {
+                  type: "image",
+                  source: {
+                    type: "base64",
+                    media_type: data.mediaType,
+                    data: data.base64,
+                  },
                 },
-              },
-              {
-                type: "text",
-                text: `Target profile JSON:\n${JSON.stringify(data.target)}`,
-              },
-            ],
-          },
-        ],
-      }),
-    });
+                {
+                  type: "text",
+                  text: `Target profile JSON:\n${JSON.stringify(data.target)}`,
+                },
+              ],
+            },
+          ],
+        }),
+      });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Anthropic API error ${res.status}: ${errText}`);
-    }
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Anthropic API error ${res.status}: ${errText}`);
+      }
 
-    const json = (await res.json()) as {
-      content: Array<{ type: string; text?: string }>;
+      const json = (await res.json()) as {
+        content: Array<{ type: string; text?: string }>;
+      };
+      const text = json.content?.find((b) => b.type === "text")?.text?.trim() ?? "";
+      const cleaned = text
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+      return JSON.parse(cleaned) as ShotScore;
     };
-    const text = json.content?.find((b) => b.type === "text")?.text?.trim() ?? "";
-    const cleaned = text
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-    return JSON.parse(cleaned) as ShotScore;
+
+    const [a, b] = await Promise.all([callOnce(), callOnce()]);
+    const avg = (x: number, y: number) => Math.round((x + y) / 2);
+    const higher = a.total_score >= b.total_score ? a : b;
+
+    return {
+      subject_placement_score: avg(a.subject_placement_score, b.subject_placement_score),
+      negative_space_score: avg(a.negative_space_score, b.negative_space_score),
+      framing_score: avg(a.framing_score, b.framing_score),
+      total_score: avg(a.total_score, b.total_score),
+      feedback: higher.feedback,
+      direction: higher.direction,
+    };
   });
+
