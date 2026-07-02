@@ -20,6 +20,7 @@ export type TargetProfile = {
   negative_space: string;
   mood: string;
   framing: string;
+  lighting: string;
   coaching_focus: string[];
 };
 
