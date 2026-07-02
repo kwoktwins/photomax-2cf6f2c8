@@ -169,9 +169,9 @@ export function ShotScoring({ target, onScored }: Props) {
           </div>
 
           <div style={{ marginTop: 16, fontSize: 13, color: "#333" }}>
-            <div>Subject placement: {result.subject_placement_score}/40</div>
-            <div>Negative space: {result.negative_space_score}/30</div>
-            <div>Framing: {result.framing_score}/30</div>
+            <div>Subject placement: {result.subject_placement_score}/30</div>
+            <div>Negative space: {result.negative_space_score}/25</div>
+            <div>Framing: {result.framing_score}/25</div>
           </div>
 
           <div
