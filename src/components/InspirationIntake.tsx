@@ -20,6 +20,7 @@ const LABELS: Record<keyof TargetProfile, string> = {
   negative_space: "Negative Space",
   mood: "Mood",
   framing: "Framing",
+  lighting: "Lighting",
   coaching_focus: "Coaching Focus",
 };
 
