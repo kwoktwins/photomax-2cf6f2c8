@@ -172,6 +172,7 @@ export function ShotScoring({ target, onScored }: Props) {
             <div>Subject placement: {result.subject_placement_score}/30</div>
             <div>Negative space: {result.negative_space_score}/25</div>
             <div>Framing: {result.framing_score}/25</div>
+            <div>Lighting: {result.lighting_score}/20</div>
           </div>
 
           <div
@@ -185,6 +186,17 @@ export function ShotScoring({ target, onScored }: Props) {
             }}
           >
             {result.feedback}
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: 12,
+              color: "#888",
+              fontStyle: "italic",
+            }}
+          >
+            Mood: {result.mood_match}
           </div>
         </div>
       )}
